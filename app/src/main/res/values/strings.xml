@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Chart Signal Alert</string>
+    <string name="start_monitoring">شروع رصد</string>
+    <string name="ready">آماده برای شروع</string>
+    <string name="service_active">سرویس فعال شد ✅</string>
+    <string name="permission_denied">اجازه داده نشد ❌</string>
+</resources>
