@@ -1,34 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- دسترسی‌های لازم برای سرویس‌های پس‌زمینه و نوتیفیکیشن -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
         android:label="Chart Signal Alert"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
-        tools:targetApi="34">
+        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
 
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:screenOrientation="portrait">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- سرویس اصلی مانیتورینگ با تعریف دقیق نوع سرویس برای اندروید 14 -->
+        <!-- در اندروید 13، نیازی به تعریف نوع سرویس در اینجا نیست، اما گذاشتنش ضرری ندارد -->
         <service
             android:name=".CaptureService"
             android:enabled="true"
@@ -37,3 +30,4 @@
 
     </application>
 </manifest>
+        
