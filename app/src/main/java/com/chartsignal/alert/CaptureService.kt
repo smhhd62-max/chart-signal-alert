@@ -42,26 +42,34 @@ class CaptureService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // جلوگیری از کرش: ابتدا نوتیفیکیشن ساخته می‌شود و سپس سرویس در حالت Foreground اجرا می‌شود
+        createChannel()
+        
         when (intent?.action) {
             ACTION_START -> {
                 val code = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
                 val data = intent.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
-                if (data != null) startCapture(code, data)
+                if (data != null) {
+                    // در اندروید 14 به بالا، حتما باید نوع سرویس مشخص شود
+                    startCaptureForeground(code, data)
+                }
             }
             ACTION_STOP -> stopSelf()
         }
         return START_STICKY
     }
 
-    private fun startCapture(resultCode: Int, data: Intent) {
-        createChannel()
+    private fun startCaptureForeground(resultCode: Int, data: Intent) {
+        // ساخت نوتیفیکیشن برای جلوگیری از کرش در اندروید 8 به بالا
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Chart Signal Alert")
             .setContentText("در حال رصد چارت...")
             .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()
 
+        // این بخش حیاتی است: مشخص کردن نوع سرویس برای اندروید 14
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
         } else {
@@ -73,6 +81,7 @@ class CaptureService : Service() {
 
         val metrics = DisplayMetrics()
         val wm = getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val bounds = wm.currentWindowMetrics.bounds
             metrics.widthPixels = bounds.width()
@@ -99,7 +108,11 @@ class CaptureService : Service() {
 
         scope.launch {
             while (isActive) {
-                captureFrame()
+                try {
+                    captureFrame()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 delay(2000)
             }
         }
@@ -112,16 +125,16 @@ class CaptureService : Service() {
             val buffer = planes[0].buffer
             val pixelStride = planes[0].pixelStride
             val rowStride = planes[0].rowStride
-            val rowPadding = rowStride - pixelStride * image.width
-
-            val bmp = Bitmap.createBitmap(
-                image.width + rowPadding / pixelStride,
-                image.height,
-                Bitmap.Config.ARGB_8888
-            )
+            
+            // محاسبه صحیح عرض تصویر برای جلوگیری از خطای Buffer
+            val bitmapWidth = image.width
+            val bitmapHeight = image.height
+            
+            val bmp = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
             bmp.copyPixelsFromBuffer(buffer)
 
-            val cropped = Bitmap.createBitmap(bmp, 0, 0, image.width, image.height)
+            // استفاده از نسخه امن‌تر برای برش تصویر
+            val cropped = Bitmap.createBitmap(bmp, 0, 0, bitmapWidth, bitmapHeight)
 
             val signal = detector.detect(cropped)
             if (signal != SignalType.NONE) {
@@ -131,6 +144,8 @@ class CaptureService : Service() {
                     Notifier.notify(this, signal)
                 }
             }
+            
+            // مدیریت حافظه برای جلوگیری از Memory Leak و کرش
             cropped.recycle()
             bmp.recycle()
         } catch (e: Exception) {
@@ -145,7 +160,7 @@ class CaptureService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Chart Signal",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_LOW
             )
             val nm = getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(channel)
@@ -154,9 +169,13 @@ class CaptureService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
-        virtualDisplay?.release()
-        imageReader?.close()
-        mediaProjection?.stop()
+        try {
+            virtualDisplay?.release()
+            imageReader?.close()
+            mediaProjection?.stop()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         super.onDestroy()
     }
 }
