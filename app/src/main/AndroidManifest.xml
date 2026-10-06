@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -21,7 +22,6 @@
             </intent-filter>
         </activity>
 
-        <!-- در اندروید 13، نیازی به تعریف نوع سرویس در اینجا نیست، اما گذاشتنش ضرری ندارد -->
         <service
             android:name=".CaptureService"
             android:enabled="true"
@@ -30,4 +30,3 @@
 
     </application>
 </manifest>
-        
